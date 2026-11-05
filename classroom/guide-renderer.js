@@ -147,8 +147,8 @@ export function sampleWorkTour(tour,age,station,width,height,imageWidth=16,image
 }
 
 export function createRecallTour(source,startedAt){
-  const tour=createWorkTour(source),returnAt=startedAt+1000;
-  const age=Math.max(0,returnAt-(source.tourPauseMs||0)-(source.revealAt||0));
+  const tour=createWorkTour(source);
+  const age=Math.max(0,startedAt-(source.tourPauseMs||0)-(source.revealAt||0));
   let from={station:'projector',point:{x:.5,y:.42,size:.46}};
   for(const station of ['projector',...Object.keys(screenTiles).map(Number)]){
     const pose=sampleWorkTour(tour,age,station,1600,900);
@@ -158,7 +158,7 @@ export function createRecallTour(source,startedAt){
   }
   const to={station:'projector'},path=flightPath(from,to),length=path.at(-1).distance;
   const flight=from.station==='projector'?0:900+Math.min(700,length*170);
-  return {source,tour,returnAt,initial:{from,to,path,length,flight,start:0,end:Infinity},legs:[],duration:Infinity};
+  return {source,tour,returnAt:startedAt,initial:{from,to,path,length,flight,start:0,end:Infinity},legs:[],duration:Infinity};
 }
 export function sampleRecallTour(plan,now,station,width,height,imageWidth=16,imageHeight=9,frame){
   if(now<plan.returnAt)return sampleWorkTour(plan.tour,Math.max(0,now-(plan.source.tourPauseMs||0)-(plan.source.revealAt||0)),station,width,height,imageWidth,imageHeight,frame);

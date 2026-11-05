@@ -113,21 +113,24 @@ test('after the first departure the mascot never takes a shortcut through the pr
   for(let age=LAUNCH+tour.initial.end;age<LAUNCH+tour.initial.end+tour.duration;age+=101)
     assert.equal(sample(age,'projector'),null);
 });
-test('a recording recalls one mascot along the shared edges after one second, then leaves it on the projection',()=>{
-  const source={...guide,phase:'presenting',revealAt:-20000},plan=createRecallTour(source,0);
+test('a recording immediately recalls one mascot along shared edges, then leaves it on the projection',()=>{
+  const startedAt=20000,age=LAUNCH+tour.initial.flight+400,tourPauseMs=275;
+  const source={...guide,phase:'presenting',revealAt:startedAt-age-tourPauseMs,tourPauseMs};
+  const plan=createRecallTour(source,startedAt);
   const surfaces=['projector',...Object.keys(screenTiles).map(Number)];
-  assert.equal(plan.returnAt,1000);assert.notEqual(plan.initial.from.station,'projector');
+  assert.equal(plan.returnAt,startedAt);assert.equal(plan.initial.from.station,tour.initial.to.station);
   for(const station of surfaces)
-    assert.deepEqual(sampleRecallTour(plan,999,station,1600,900),sampleWorkTour(tour,20999,station,1600,900));
-  const from=plan.initial.from.station,a=sampleRecallTour(plan,999.999,from,1600,900),b=sampleRecallTour(plan,1000,from,1600,900);
+    assert.deepEqual(sampleRecallTour(plan,startedAt-1,station,1600,900),sampleWorkTour(tour,age-1,station,1600,900));
+  const from=plan.initial.from.station,a=sampleRecallTour(plan,startedAt-.001,from,1600,900),b=sampleRecallTour(plan,startedAt,from,1600,900);
+  assert.equal(a.phase,'perch');assert.equal(b.phase,'flight');
   close(a.x,b.x);close(a.y,b.y);close(a.size,b.size,.001);
-  for(let now=1001;now<1000+plan.initial.flight;now+=29){
+  const landed=startedAt+plan.initial.flight;
+  for(let now=startedAt+1;now<landed;now+=29){
     const poses=surfaces.map(station=>({station,p:sampleRecallTour(plan,now,station,1600,900)})).filter(({p})=>p);
     const centres=poses.filter(({p})=>p.x>=0&&p.x<1&&p.y>=0&&p.y<1);
     assert.equal(centres.length,1,`one mascot at ${now}`);
     assert(poses.every(({p})=>Number.isFinite(p.size)&&p.trail.every(b=>b.radius<p.size*.09)));
   }
-  const landed=1000+plan.initial.flight;
   for(const station of surfaces){
     const pose=sampleRecallTour(plan,landed,station,1600,900);
     if(station==='projector'){close(pose.x,.5);close(pose.y,.42);close(pose.size,736);assert.equal(pose.gazeY,48);}
@@ -138,10 +141,10 @@ test('cancelling a short recording retains the exact previous tour',()=>{
   assert.deepEqual(createWorkTour({...guide,session:guide.session+10,tourSession:guide.session}),tour);
 });
 test('recall starts at the currently displayed corner for portrait works and different monitor shapes',()=>{
-  const age=LAUNCH+tour.initial.flight+400,source={...guide,phase:'presenting',revealAt:1000-age};
-  const plan=createRecallTour(source,0),station=tour.initial.to.station;
+  const startedAt=20000,age=LAUNCH+tour.initial.flight+400,source={...guide,phase:'presenting',revealAt:startedAt-age};
+  const plan=createRecallTour(source,startedAt),station=tour.initial.to.station;
   for(const [width,height,iw,ih] of [[1600,900,600,1800],[1280,1024,600,1800],[900,1600,1800,600]]){
-    const a=sampleRecallTour(plan,999.999,station,width,height,iw,ih),b=sampleRecallTour(plan,1000,station,width,height,iw,ih);
+    const a=sampleRecallTour(plan,startedAt-.001,station,width,height,iw,ih),b=sampleRecallTour(plan,startedAt,station,width,height,iw,ih);
     close(a.x,b.x);close(a.y,b.y);close(a.size,b.size,.001);close(a.rotation,b.rotation,.001);
   }
 });
